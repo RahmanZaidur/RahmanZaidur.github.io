@@ -1,5 +1,5 @@
 ---
-title: "LangGraph + LangChain Runnables: The Runnable Smart Object"
+title: "LangGraph + LangChain Runnables: The Runnable Smart Objects"
 date: 2026-02-08
 categories: [AI, LangChain, LangGraph]
 tags: [langchain, langgraph, runnable, runnablelambda, python, streaming, batching, retries]
@@ -32,14 +32,13 @@ A Runnable object can do many things because it adheres to a strict contract (bl
 - Stream output: `.stream(input)` (get data chunk by chunk)
 - Stream async: `.astream(input)`
 - Chain: connect to other Runnables using the `|` symbol
-- Run in parallel branches: `RunnableParallel(...)` (fan-out)
+- Run parallel branches: `RunnableParallel(...)` (fan-out)
 - Add retries: `.with_retry(...)`
 - Add fallback paths: `.with_fallbacks([...])`
 - Pass runtime config: `config={...}` (tags/metadata/callbacks for tracing)
-- Assign or reshape fields in dict-like flows: `.assign(...)` (common in pipelines)
-- Pick/route specific keys (when working with dict inputs): `RunnablePick(...)` / branching patterns
+- Build dict-shaped flows: `.assign(...)` (add computed fields in a pipeline)
 
-> Note: Some features depend on what the wrapped runnable supports (for example, streaming typically requires a runnable that yields chunks).
+> Note: Some features depend on what the wrapped Runnable supports (for example, streaming typically requires a Runnable that yields chunks).
 
 `RunnableLambda` is the specific wrapper that turns a plain Python function into this "Smart Object."
 
@@ -50,20 +49,20 @@ A Runnable object can do many things because it adheres to a strict contract (bl
 ### Standard Python Function
 
 ```python
-def add_exclamation(text: str) -> str:
-    return text + "!"
+def add_one(x: int) -> int:
+    return x + 1
 ```
 
 Call it like normal Python:
 
 ```python
-print(add_exclamation("hello"))
+print(add_one(41))
 ```
 
-Text output:
+Output:
 
 ```
-hello!
+42
 ```
 
 ### Runnable Version (RunnableLambda)
@@ -71,15 +70,15 @@ hello!
 ```python
 from langchain_core.runnables import RunnableLambda
 
-add_exclamation_r = RunnableLambda(add_exclamation)
+add_one_r = RunnableLambda(add_one)
 
-print(add_exclamation_r.invoke("hello"))
+print(add_one_r.invoke(41))
 ```
 
-Text output:
+Output:
 
 ```
-hello!
+42
 ```
 
 Now it supports the Runnable contract and can do much more than a raw function.
@@ -93,18 +92,19 @@ Now it supports the Runnable contract and can do much more than a raw function.
 ```python
 from langchain_core.runnables import RunnableLambda
 
-def normalize(s: str) -> str:
-    return s.strip().lower()
+def area_of_circle(r: float) -> float:
+    pi = 3.141592653589793
+    return pi * r * r
 
-r = RunnableLambda(normalize)
+r = RunnableLambda(area_of_circle)
 
-print(r.invoke("  HeLLo  "))
+print(r.invoke(2.0))
 ```
 
-Text output:
+Output:
 
 ```
-hello
+12.566370614359172
 ```
 
 ---
@@ -117,22 +117,22 @@ If you're inside an async app (FastAPI, async worker, etc.), you can use the asy
 import asyncio
 from langchain_core.runnables import RunnableLambda
 
-def greet(name: str) -> str:
-    return f"hi {name}"
+def double(x: int) -> int:
+    return 2 * x
 
-r = RunnableLambda(greet)
+r = RunnableLambda(double)
 
 async def main():
-    result = await r.ainvoke("sam")
+    result = await r.ainvoke(21)
     print(result)
 
 asyncio.run(main())
 ```
 
-Text output:
+Output:
 
 ```
-hi sam
+42
 ```
 
 ---
@@ -149,13 +149,13 @@ def square(x: int) -> int:
 
 r = RunnableLambda(square)
 
-print(r.batch([1, 2, 3, 4]))
+print(r.batch([1, 2, 3, 4, 5]))
 ```
 
-Text output:
+Output:
 
 ```
-[1, 4, 9, 16]
+[1, 4, 9, 16, 25]
 ```
 
 ---
@@ -165,28 +165,32 @@ Text output:
 Streaming is useful when you want incremental chunks of output.  
 Not every Runnable streams, but when it does you can consume it as an iterator.
 
-Here’s a simple streaming example that yields one word at a time:
+Here’s a simple streaming example that yields a running total (cumulative sum):
 
 ```python
-from typing import Iterator
+from typing import Iterator, List
 from langchain_core.runnables import RunnableLambda
 
-def chunk_words(text: str) -> Iterator[str]:
-    for w in text.split():
-        yield w
+def cumulative_sum(nums: List[int]) -> Iterator[int]:
+    total = 0
+    for n in nums:
+        total += n
+        yield total
 
-r = RunnableLambda(chunk_words)
+r = RunnableLambda(cumulative_sum)
 
-for chunk in r.stream("streaming feels fast"):
+for chunk in r.stream([3, 1, 4, 1, 5]):
     print(chunk)
 ```
 
-Text output:
+Output:
 
 ```
-streaming
-feels
-fast
+3
+4
+8
+9
+14
 ```
 
 ---
@@ -198,22 +202,24 @@ One of the biggest benefits: **composition**.
 ```python
 from langchain_core.runnables import RunnableLambda
 
-def strip_text(s: str) -> str:
-    return s.strip()
+def add_three(x: int) -> int:
+    return x + 3
 
-def to_upper(s: str) -> str:
-    return s.upper()
+def times_ten(x: int) -> int:
+    return x * 10
 
-pipeline = RunnableLambda(strip_text) | RunnableLambda(to_upper)
+pipeline = RunnableLambda(add_three) | RunnableLambda(times_ten)
 
-print(pipeline.invoke("  hello  "))
+print(pipeline.invoke(4))
 ```
 
-Text output:
+Output:
 
 ```
-HELLO
+70
 ```
+
+(Explanation: `(4 + 3) * 10 = 70`)
 
 ---
 
@@ -224,57 +230,57 @@ Run multiple branches at once and get a dictionary back.
 ```python
 from langchain_core.runnables import RunnableLambda, RunnableParallel
 
-def word_count(s: str) -> int:
-    return len(s.split())
+def square(x: int) -> int:
+    return x * x
 
-def char_count(s: str) -> int:
-    return len(s)
+def cube(x: int) -> int:
+    return x * x * x
 
 parallel = RunnableParallel(
-    words=RunnableLambda(word_count),
-    chars=RunnableLambda(char_count),
+    squared=RunnableLambda(square),
+    cubed=RunnableLambda(cube),
 )
 
-print(parallel.invoke("count me"))
+print(parallel.invoke(3))
 ```
 
-Text output:
+Output:
 
 ```
-{'words': 2, 'chars': 8}
+{'squared': 9, 'cubed': 27}
 ```
 
 ---
 
-## Add derived fields with `.assign(...)`
+## Build dict-shaped flows with `.assign(...)`
 
 This is handy when your pipeline passes around dictionaries and you want to add computed fields.
 
 ```python
 from langchain_core.runnables import RunnableLambda
 
-def base(user_text: str) -> dict:
-    return {"text": user_text}
+def make_record(x: int) -> dict:
+    return {"x": x}
 
-def length(d: dict) -> int:
-    return len(d["text"])
+def squared(d: dict) -> int:
+    return d["x"] ** 2
 
-def uppercase(d: dict) -> str:
-    return d["text"].upper()
+def cubed(d: dict) -> int:
+    return d["x"] ** 3
 
 r = (
-    RunnableLambda(base)
-    .assign(length=RunnableLambda(length))
-    .assign(shout=RunnableLambda(uppercase))
+    RunnableLambda(make_record)
+    .assign(square=RunnableLambda(squared))
+    .assign(cube=RunnableLambda(cubed))
 )
 
-print(r.invoke("hello"))
+print(r.invoke(4))
 ```
 
-Text output:
+Output:
 
 ```
-{'text': 'hello', 'length': 5, 'shout': 'HELLO'}
+{'x': 4, 'square': 16, 'cube': 64}
 ```
 
 ---
@@ -287,26 +293,27 @@ Even if your function ignores it, the Runnable interface supports it.
 ```python
 from langchain_core.runnables import RunnableLambda
 
-def greet(name: str) -> str:
-    return f"hi {name}"
+def add_tax(amount: float) -> float:
+    tax_rate = 0.08
+    return amount * (1 + tax_rate)
 
-r = RunnableLambda(greet)
+r = RunnableLambda(add_tax)
 
 print(
     r.invoke(
-        "sam",
+        100.0,
         config={
-            "tags": ["demo", "greeting"],
-            "metadata": {"request_id": "abc-123"},
+            "tags": ["pricing", "tax"],
+            "metadata": {"invoice_id": "INV-1001"},
         },
     )
 )
 ```
 
-Text output:
+Output:
 
 ```
-hi sam
+108.0
 ```
 
 ---
@@ -320,21 +327,21 @@ from langchain_core.runnables import RunnableLambda
 
 attempts = {"n": 0}
 
-def flaky(x: int) -> int:
+def flaky_divide(x: int) -> float:
     attempts["n"] += 1
     if attempts["n"] < 3:
         raise RuntimeError("temporary failure")
-    return x * 10
+    return 84 / x
 
-r = RunnableLambda(flaky).with_retry(stop_after_attempt=5)
+r = RunnableLambda(flaky_divide).with_retry(stop_after_attempt=5)
 
-print(r.invoke(7))
+print(r.invoke(2))
 ```
 
-Text output:
+Output:
 
 ```
-70
+42.0
 ```
 
 ### Fallback with `.with_fallbacks([...])`
@@ -342,21 +349,21 @@ Text output:
 ```python
 from langchain_core.runnables import RunnableLambda
 
-def primary(_: str) -> str:
-    raise RuntimeError("primary is down")
+def primary(_: int) -> int:
+    raise RuntimeError("primary failed")
 
-def backup(_: str) -> str:
-    return "backup result"
+def backup(x: int) -> int:
+    return x * 2
 
 r = RunnableLambda(primary).with_fallbacks([RunnableLambda(backup)])
 
-print(r.invoke("anything"))
+print(r.invoke(21))
 ```
 
-Text output:
+Output:
 
 ```
-backup result
+42
 ```
 
 ---
