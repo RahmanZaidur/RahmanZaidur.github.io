@@ -8,7 +8,7 @@ math: true
 
 If you are diving into LangChain or LangGraph, you will immediately encounter the concept of a **Runnable**. It is the fundamental building block of the entire ecosystem. But what exactly is it, and why should you care?
 
-## 1. What is a "Runnable"?
+## What is a "Runnable"?
 
 In standard Python, a function is just a block of code you call: `my_function(input)`.
 
@@ -27,7 +27,7 @@ A raw Python function can only do one thing: run. A `Runnable` object can do man
 
 ---
 
-## 2. The Transformation: Plain Python vs. Runnable
+## The Transformation: Plain Python vs. Runnable
 
 Let's look at a simple example to see the difference in syntax.
 
@@ -64,7 +64,7 @@ At first glance, this looks like extra steps for the same result. But the magic 
 
 ---
 
-## 3. The "Special Stuff": Runnable Capabilities
+## The "Special Stuff": Runnable Capabilities
 
 Once your function is wrapped, it gains superpowers that you don't have to write yourself.
 
