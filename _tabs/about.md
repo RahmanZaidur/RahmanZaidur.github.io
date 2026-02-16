@@ -6,7 +6,7 @@ icon: fas fa-info-circle
 order: 4
 ---
 
-I am a PhD student in **Industrial Engineering** at the **University of Arkansas** (expected 2027), specializing in Machine Learning, Data Analytics, and Operations Research. My research focuses on multimodal freight networks and applying Generative AI to maritime logistics.
+I am a PhD student in **Industrial Engineering** at the **University of Arkansas**, specializing in Machine Learning, Data Analytics, and Operations Research. My research focuses on multimodal freight networks and applying Generative AI to maritime logistics.
 
 ## Technical Skills
 
@@ -35,5 +35,5 @@ I am a PhD student in **Industrial Engineering** at the **University of Arkansas
 
 ## Education
 
-* **PhD, Industrial Engineering** | University of Arkansas (3.86 GPA)
-* **MSc, Industrial & Manufacturing Engineering** | North Dakota State University
+* **PhD, Industrial Engineering** | University of Arkansas (2023-Present)
+* **MSc, Industrial & Manufacturing Engineering** | North Dakota State University (2021-2023)
